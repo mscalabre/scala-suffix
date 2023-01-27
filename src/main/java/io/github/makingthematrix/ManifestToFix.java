@@ -4,12 +4,17 @@ import io.vavr.Lazy;
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.ZipParameters;
 import org.apache.commons.io.FileUtils;
+import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 final class ManifestToFix {
@@ -43,16 +48,27 @@ final class ManifestToFix {
 
     private boolean fixManifestFile(String libraryName) throws IOException {
         final var manifestLines = FileUtils.readLines(manifestFile, Charset.defaultCharset());
-        final var moduleNameLine =
-            manifestLines.stream()
-                .filter(line -> line.toLowerCase().contains(AUTOMATIC_MODULE_NAME.toLowerCase()))
-                .findAny();
+        boolean hasModule = false;
+        Map<String, Integer> mapKey = new HashMap<>();
+        List<String> validLines = new ArrayList<>();
+        for(String line : manifestLines){
+            if(line.contains(":")){
+                String key = line.split(":")[0];
+                if(line.toLowerCase().contains(AUTOMATIC_MODULE_NAME.toLowerCase())){
+                    hasModule=true;
+                }
+                if(!mapKey.containsKey(key)) {
+                    validLines.add(line);
+                    mapKey.put(key, 1);
+                }
+            }
+        }
 
-        if (moduleNameLine.isPresent()) {
+        if (hasModule && validLines.size()==manifestLines.size()) {
             return false;
         }
 
-        addAutomaticModuleName(manifestLines, libraryName);
+        addAutomaticModuleName(validLines, !hasModule ? libraryName: null);
         if (!zipFile.isValidZipFile()) {
             throw new IOException("After the operation the zip file is INVALID: " + zipFile.getFile().getAbsolutePath());
         }
@@ -65,7 +81,9 @@ final class ManifestToFix {
                 .map(String::trim)
                 .filter(line -> !line.isBlank())
                 .collect(Collectors.toList());
-        newManifestLines.add(AUTOMATIC_MODULE_NAME + ": " + libraryName);
+        if(libraryName != null) {
+            newManifestLines.add(AUTOMATIC_MODULE_NAME + ": " + libraryName);
+        }
 
         manifestFile.createNewFile();
         FileUtils.writeLines(manifestFile, newManifestLines);
