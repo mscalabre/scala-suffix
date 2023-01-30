@@ -65,12 +65,13 @@ final class ManifestToFix {
         }
 
         boolean isJoglAll = libraryName.contains("jogl-all");
+        boolean isGluegenRt = libraryName.contains("gluegen-rt");
 
-        if (hasModule && validLines.size()==manifestLines.size() && !isJoglAll) {
+        if (hasModule && validLines.size()==manifestLines.size() && !isJoglAll && !isGluegenRt) {
             return false;
         }
 
-        final String finalLibraryName = isJoglAll ? libraryName.replace("-all", ".all") : libraryName;
+        final String finalLibraryName = (isJoglAll || isGluegenRt) ? libraryName.replace("-", ".") : libraryName;
 
         addAutomaticModuleName(validLines, finalLibraryName, !hasModule || isJoglAll);
         if (!zipFile.isValidZipFile()) {
