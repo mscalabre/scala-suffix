@@ -64,24 +64,29 @@ final class ManifestToFix {
             }
         }
 
-        if (hasModule && validLines.size()==manifestLines.size()) {
+        boolean isJoglAll = libraryName.contains("jogl-all");
+
+        if (hasModule && validLines.size()==manifestLines.size() && !isJoglAll) {
             return false;
         }
 
-        addAutomaticModuleName(validLines, !hasModule ? libraryName: null);
+        final String finalLibraryName = isJoglAll ? libraryName.replace("-all", ".all") : libraryName;
+
+        addAutomaticModuleName(validLines, finalLibraryName, !hasModule || isJoglAll);
         if (!zipFile.isValidZipFile()) {
             throw new IOException("After the operation the zip file is INVALID: " + zipFile.getFile().getAbsolutePath());
         }
         return true;
     }
 
-    private void addAutomaticModuleName(List<String> manifestLines, String libraryName) throws IOException {
+    private void addAutomaticModuleName(List<String> manifestLines, String libraryName, boolean addOrReplaceModuleName) throws IOException {
         final var newManifestLines =
             List.copyOf(manifestLines).stream()
                 .map(String::trim)
                 .filter(line -> !line.isBlank())
+                .filter(line -> !addOrReplaceModuleName || !line.contains(AUTOMATIC_MODULE_NAME))
                 .collect(Collectors.toList());
-        if(libraryName != null) {
+        if(addOrReplaceModuleName) {
             newManifestLines.add(AUTOMATIC_MODULE_NAME + ": " + libraryName);
         }
 
