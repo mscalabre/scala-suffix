@@ -51,11 +51,13 @@ final class ManifestToFix {
         boolean hasModule = false;
         Map<String, Integer> mapKey = new HashMap<>();
         List<String> validLines = new ArrayList<>();
+        String existingModule = null;
         for(String line : manifestLines){
             if(line.contains(":")){
                 String key = line.split(":")[0];
                 if(line.toLowerCase().contains(AUTOMATIC_MODULE_NAME.toLowerCase())){
                     hasModule=true;
+                    existingModule = line.split(":")[1];
                 }
                 if(!mapKey.containsKey(key)) {
                     validLines.add(line);
@@ -64,8 +66,10 @@ final class ManifestToFix {
             }
         }
 
-        boolean isJoglAll = libraryName.contains("jogl-all");
-        boolean isGluegenRt = libraryName.contains("gluegen-rt");
+        boolean isJoglAll = libraryName.contains("jogl-all")
+                && !(hasModule && existingModule.contains("jogl.all"));//Fixed
+        boolean isGluegenRt = libraryName.contains("gluegen-rt")
+                && !(hasModule && existingModule.contains("gluegen.rt"));//Fixed
 
         if (hasModule && validLines.size()==manifestLines.size() && !isJoglAll && !isGluegenRt) {
             return false;
