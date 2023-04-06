@@ -90,9 +90,11 @@ public final class SufFixMojo extends AbstractMojo {
     private void fixManifest(Tuple2<File, String> tuple) {
         clean();
         try {
-            final var manifestToFix = new ManifestToFix(tuple._1, tempDir.get());
-            if (manifestToFix.fix(tuple._2)) {
-                info("scala-suffix: the manifest file fixed for: " + tuple._2);
+            if(tuple._1 != null){
+                final var manifestToFix = new ManifestToFix(tuple._1, tempDir.get());
+                if (manifestToFix.fix(tuple._2)) {
+                    info("scala-suffix: the manifest file fixed for: " + tuple._2);
+                }
             }
         } catch (IOException ex) {
             error(ex);
